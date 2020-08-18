@@ -1,7 +1,7 @@
 {
   "name": "express-jwt",
   "version": "1.0.0",
-  "description": "",
+  "description": "Express-JWT",
   "main": "index.js",
   "scripts": {
     "start": "nodemon index.js"
