@@ -3,14 +3,16 @@ const RefreshTokenModel = require("../models/RefreshToken");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const secret = process.env.SECRET;
-const secretRefresh = process.env.SECRET_REFRESH;
 
 class auth {
-  issueTokenPair(userId) {
-    const newRefreshToken = jwt.sign({ id: userId }, secretRefresh, {
-      expiresIn: "7d",
-    });
+  async issueTokenPair(userId) {
+    const newRefreshToken = await jwt.sign(
+      { id: userId },
+      process.env.SECRET_REFRESH,
+      {
+        expiresIn: process.env.REFRESH_TOKEN_TIME,
+      }
+    );
     const token = new RefreshTokenModel({
       user: userId,
       refresh: newRefreshToken,
@@ -18,89 +20,111 @@ class auth {
     token.save();
     return {
       status: "success",
-      token: jwt.sign({ id: userId }, secret, { expiresIn: 600 }),
+      token: jwt.sign({ id: userId }, process.env.SECRET, {
+        expiresIn: process.env.ACCESS_TOKEN_TIME,
+      }),
       refreshToken: newRefreshToken,
     };
   }
 
-  signup(req, res) {
+  async signup(req, res) {
     const { email, password, fullname } = req.body;
-    UserModel.findOne({ email: email }).then((user) => {
+    try {
+      const user = await UserModel.findOne({ email: email });
       if (user) {
         return res.status(400).json({
           message: "Пользователь существует.",
         });
       } else {
-        const newUser = new UserModel({
-          email: email,
-          password: password,
-          fullname: fullname,
-        });
-        bcrypt.hash(newUser.password, 10, (err, hash) => {
+        bcrypt.hash(password, 10, async (err, hash) => {
           if (err) {
             res.status(500).json({
               message: err,
             });
           }
-          newUser.password = hash;
-          newUser
-            .save()
-            .then((user) => {
-              res.status(201).json(user);
-            })
-            .catch((err) =>
-              res.status(500).json({
-                message: err,
-              })
-            );
+          const newUser = new UserModel({
+            email: email,
+            password: hash,
+            fullname: fullname.name + " " + fullname.surname,
+          });
+          let userSave = await newUser.save();
+          if (userSave) {
+            return res.status(201).json({
+              message: "Пользователь создан",
+            });
+          } else {
+            return res.status(500).json({
+              message: "Ошибка сервера",
+            });
+          }
         });
       }
-    });
+    } catch (ex) {
+      return res.status(500).json({
+        message: "Ошибка сервера",
+      });
+    }
   }
 
-  signin(req, res) {
+  async signin(req, res) {
     const { email, password } = req.body;
-    UserModel.findOne({ email: email }).then((user) => {
+    try {
+      const user = await UserModel.findOne({ email: email });
       if (!user) {
         return res.status(404).json({
           message: "Пользователь не найден.",
         });
       }
-      bcrypt.compare(password, user.password).then((isMatch) => {
-        if (isMatch) {
-          res.status(200).json(this.issueTokenPair(user._id));
-        } else {
-          res.status(400).json({ message: "Неправильный пароль." });
-        }
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (isMatch) {
+        return res.status(200).json(this.issueTokenPair(user._id));
+      } else {
+        return res.status(400).json({ message: "Неправильный пароль." });
+      }
+    } catch (ex) {
+      return res.status(500).json({
+        message: "Ошибка сервера",
       });
-    });
+    }
   }
 
-  refresh(req, res) {
+  async refresh(req, res) {
     const { refreshToken } = req.body;
-    RefreshTokenModel.findOne({ refresh: refreshToken })
-      .then((token) => {
+    try {
+      const token = await RefreshTokenModel.findOne({ refresh: refreshToken });
+      if (token) {
         token.remove();
-        res.status(200).json(this.issueTokenPair(token.user));
-      })
-      .catch(() => {
-        res.status(404).json({ message: "Пользователь не найден." });
+        return res.status(200).json(this.issueTokenPair(token.user));
+      } else {
+        return res.status(404).json({ message: "Пользователь не найден." });
+      }
+    } catch (ex) {
+      return res.status(500).json({
+        message: "Ошибка сервера",
       });
+    }
   }
 
-  logout(req, res) {
+  async logout(req, res) {
     const { refreshToken } = req.body;
-    RefreshTokenModel.remove({ refresh: refreshToken })
-      .then(() => {
-        res.status(200).json({
+    try {
+      const tokenRemove = await RefreshTokenModel.remove({
+        refresh: refreshToken,
+      });
+      if (tokenRemove) {
+        return res.status(200).json({
           isAuth: false,
         });
-      })
-      .catch((err) => {
-        res.status(500).json({
-          message: err,
+      } else {
+        return res.status(500).json({
+          message: "Ошибка сервера",
         });
+      }
+    } catch (ex) {
+      return res.status(500).json({
+        message: "Ошибка сервера",
       });
+    }
   }
 }
 

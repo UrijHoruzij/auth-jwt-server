@@ -4,7 +4,6 @@ const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const passport = require("passport");
 const db = require("./core/db");
-const multer = require("./core/multer");
 require("dotenv").config();
 
 db.connect();
@@ -36,16 +35,6 @@ app.post(
     auth.logout(req, res);
   }
 );
-
-const uploadClass = require("./controllers/upload");
-const upload = new uploadClass();
-
-app.post("/files", multer.single("file"), (req, res) => {
-  upload.create(req, res);
-});
-app.delete("/files", (req, res) => {
-  upload.delete(req, res);
-});
 
 app.listen(process.env.PORT, () => {
   console.log(`Server run: ${process.env.PORT}`);
