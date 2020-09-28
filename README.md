@@ -5,5 +5,4 @@
 - Express
 - JWT
 - Mongoose
-- Multer
 - Passport
