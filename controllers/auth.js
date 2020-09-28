@@ -5,8 +5,26 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 class auth {
-  async issueTokenPair(userId) {
-    const newRefreshToken = await jwt.sign(
+  async verify(req, res) {
+    const { token } = req.body;
+    try {
+      const decoded = await jwt.verify(token, process.env.SECRET);
+      if (decoded) {
+        return res.status(200).json({
+          message: "Токен валидный",
+          verify: true,
+        });
+      }
+    } catch {
+      return res.status(401).json({
+        message: "Токен не валидный",
+        verify: false,
+      });
+    }
+  }
+
+  issueTokenPair(userId) {
+    const newRefreshToken = jwt.sign(
       { id: userId },
       process.env.SECRET_REFRESH,
       {
@@ -59,7 +77,7 @@ class auth {
           }
         });
       }
-    } catch (ex) {
+    } catch {
       return res.status(500).json({
         message: "Ошибка сервера",
       });
@@ -81,7 +99,7 @@ class auth {
       } else {
         return res.status(400).json({ message: "Неправильный пароль." });
       }
-    } catch (ex) {
+    } catch {
       return res.status(500).json({
         message: "Ошибка сервера",
       });
@@ -98,7 +116,7 @@ class auth {
       } else {
         return res.status(404).json({ message: "Пользователь не найден." });
       }
-    } catch (ex) {
+    } catch {
       return res.status(500).json({
         message: "Ошибка сервера",
       });

@@ -10,7 +10,7 @@ db.connect = async () => {
     useFindAndModify: false,
   });
   if (connect) {
-    console.log("Connected Successfully to MongoDB");
+    console.log("Успешно подключение к MongoDB");
   } else {
     console.error("Ошибка поключения к базе данных");
   }
