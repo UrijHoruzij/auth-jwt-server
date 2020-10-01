@@ -4,11 +4,16 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
+const accessSecret = process.env.SECRET;
+const accessTime = process.env.ACCESS_TOKEN_TIME;
+const refreshSecret = process.env.SECRET_REFRESH;
+const refreshTime = process.env.REFRESH_TOKEN_TIME;
+
 class auth {
   async verify(req, res) {
     const { token } = req.body;
     try {
-      const decoded = await jwt.verify(token, process.env.SECRET);
+      const decoded = await jwt.verify(token, accessSecret);
       if (decoded) {
         return res.status(200).json({
           message: "Токен валидный",
@@ -24,13 +29,9 @@ class auth {
   }
 
   issueTokenPair(userId) {
-    const newRefreshToken = jwt.sign(
-      { id: userId },
-      process.env.SECRET_REFRESH,
-      {
-        expiresIn: process.env.REFRESH_TOKEN_TIME,
-      }
-    );
+    const newRefreshToken = jwt.sign({ id: userId }, refreshSecret, {
+      expiresIn: refreshTime,
+    });
     const token = new RefreshTokenModel({
       user: userId,
       refresh: newRefreshToken,
@@ -38,8 +39,8 @@ class auth {
     token.save();
     return {
       status: "success",
-      token: jwt.sign({ id: userId }, process.env.SECRET, {
-        expiresIn: process.env.ACCESS_TOKEN_TIME,
+      token: jwt.sign({ id: userId }, accessSecret, {
+        expiresIn: accessTime,
       }),
       refreshToken: newRefreshToken,
     };
