@@ -1,6 +1,6 @@
 FROM node:12
 
-WORKDIR /usr/src/express-jwt
+WORKDIR /express-jwt
 
 COPY package*.json ./
 

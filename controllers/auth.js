@@ -1,5 +1,4 @@
 const UserModel = require("../models/User");
-const RefreshTokenModel = require("../models/RefreshToken");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
@@ -8,51 +7,59 @@ const accessSecret = process.env.SECRET;
 const accessTime = process.env.ACCESS_TOKEN_TIME;
 const refreshSecret = process.env.SECRET_REFRESH;
 const refreshTime = process.env.REFRESH_TOKEN_TIME;
+const ssoTokenSecret = process.env.SSO_TOKEN_SECRET;
+const ssoTokenTime = process.env.SSO_TOKEN_TIME;
 
 class auth {
   async verify(req, res) {
-    const { token } = req.body;
+    const { accessToken } = req.body;
     try {
-      const decoded = await jwt.verify(token, accessSecret);
+      const decoded = await jwt.verify(accessToken, accessSecret);
       if (decoded) {
         return res.status(200).json({
-          message: "Токен валидный",
+          message: "The token is valid",
           verify: true,
         });
       }
     } catch {
       return res.status(401).json({
-        message: "Токен не валидный",
+        message: "The token is not valid",
         verify: false,
       });
     }
   }
 
-  issueTokenPair(userId) {
-    const newRefreshToken = jwt.sign({ id: userId }, refreshSecret, {
-      expiresIn: refreshTime,
-    });
-    const token = new RefreshTokenModel({
-      user: userId,
-      refresh: newRefreshToken,
-    });
-    token.save();
+  createAsseccToken(userId){
     return {
-      status: "success",
-      token: jwt.sign({ id: userId }, accessSecret, {
+      isAuth: true,
+      accessToken: jwt.sign({ id: userId }, accessSecret, {
         expiresIn: accessTime,
       }),
-      refreshToken: newRefreshToken,
+      accessTokenTime: accessTime,
+      SSOToken: this.createSSOToken(userId)
     };
   }
 
+  createRefreshToken(userId) {
+    const refreshToken = jwt.sign({ id: userId }, refreshSecret, {
+      expiresIn: refreshTime,
+    });
+    return refreshToken;
+  }
+
+  createSSOToken(userId){
+    return jwt.sign({ id: userId }, ssoTokenSecret, {
+        expiresIn: ssoTokenTime,
+      });
+  }
+
   async signup(req, res) {
-    const { email, password, fullname } = req.body;
+    const { email, password, name, lastname } = req.body;
     try {
       const user = await UserModel.findOne({ email: email });
       if (user) {
         return res.status(400).json({
-          message: "Пользователь существует.",
+          message: "The user exists.",
         });
       } else {
         bcrypt.hash(password, 10, async (err, hash) => {
@@ -64,23 +71,24 @@ class auth {
           const newUser = new UserModel({
             email: email,
             password: hash,
-            fullname: fullname.name + " " + fullname.surname,
+            name: name,
+            lastname: lastname,
           });
           let userSave = await newUser.save();
           if (userSave) {
             return res.status(201).json({
-              message: "Пользователь создан",
+              message: "The user is created",
             });
           } else {
             return res.status(500).json({
-              message: "Ошибка сервера",
+              message: "Server error",
             });
           }
         });
       }
     } catch {
       return res.status(500).json({
-        message: "Ошибка сервера",
+        message: "Server error",
       });
     }
   }
@@ -91,59 +99,45 @@ class auth {
       const user = await UserModel.findOne({ email: email });
       if (!user) {
         return res.status(404).json({
-          message: "Пользователь не найден.",
+          message: "The user is not found.",
         });
       }
       const isMatch = await bcrypt.compare(password, user.password);
       if (isMatch) {
-        return res.status(200).json(this.issueTokenPair(user._id));
+        res.cookie('refreshToken', this.createRefreshToken(user._id),{ httpOnly : true} )
+        return res.status(200).json(this.createAsseccToken(user._id));
       } else {
-        return res.status(400).json({ message: "Неправильный пароль." });
+        return res.status(400).json({ message: "Wrong password." });
       }
     } catch {
       return res.status(500).json({
-        message: "Ошибка сервера",
+        message: "Server error",
       });
     }
   }
 
   async refresh(req, res) {
-    const { refreshToken } = req.body;
+    const { refreshToken } = req.cookies;
     try {
-      const token = await RefreshTokenModel.findOne({ refresh: refreshToken });
-      if (token) {
-        token.remove();
-        return res.status(200).json(this.issueTokenPair(token.user));
-      } else {
-        return res.status(404).json({ message: "Пользователь не найден." });
+      const decoded = await jwt.verify(refreshToken, refreshSecret);
+      if (decoded) {
+        res.cookie('refreshToken', this.createRefreshToken(decoded.id),{ httpOnly : true} )
+        return res.status(200).json(this.createAsseccToken(decoded.id))
       }
     } catch {
+      res.clearCookie('refreshToken');
       return res.status(500).json({
-        message: "Ошибка сервера",
+        isAuth: false,
+        message: "Server error",
       });
     }
   }
 
   async logout(req, res) {
-    const { refreshToken } = req.body;
-    try {
-      const tokenRemove = await RefreshTokenModel.remove({
-        refresh: refreshToken,
-      });
-      if (tokenRemove) {
-        return res.status(200).json({
-          isAuth: false,
-        });
-      } else {
-        return res.status(500).json({
-          message: "Ошибка сервера",
-        });
-      }
-    } catch (ex) {
-      return res.status(500).json({
-        message: "Ошибка сервера",
-      });
-    }
+    return res.clearCookie('refreshToken')
+      .status(200).json({
+        isAuth: false,
+    });
   }
 }
 

@@ -14,7 +14,8 @@ module.exports = (passport) => {
       if (user) {
         return done(null, {
           id: user._id,
-          fullname: user.fullname,
+          name: user.name,
+          lastname: user.lastname
         });
       } else {
         return done(null, false);

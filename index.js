@@ -1,10 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-const bodyParser = require("body-parser");
 const passport = require("passport");
 const morgan = require("morgan");
 const os = require("os");
 const cluster = require("cluster");
+const cookieParser = require('cookie-parser')
 const db = require("./core/db");
 require("dotenv").config();
 
@@ -29,9 +29,13 @@ const server = () => {
 
   app.use(passport.initialize());
   require("./core/passport-config")(passport);
-  app.use(cors());
-  app.use(bodyParser.urlencoded({ extended: false }));
-  app.use(bodyParser.json());
+  app.use(cors({
+    credentials: true,
+    origin: ['http://localhost:3000']
+  }));
+  app.use(express.urlencoded({ extended: false }));
+  app.use(express.json());
+  app.use(cookieParser())
 
   const authClass = require("./controllers/auth");
   const auth = new authClass();
@@ -47,22 +51,20 @@ const server = () => {
   });
   app.post(
     "/verify",
-    passport.authenticate("jwt", { session: false }),
+    passport.authenticate("jwt"),
     (req, res) => {
       auth.verify(req, res);
     }
   );
   app.post(
     "/logout",
-    passport.authenticate("jwt", { session: false }),
+    passport.authenticate("jwt"),
     (req, res) => {
       auth.logout(req, res);
     }
   );
   app.listen(process.env.PORT, () => {
-    console.log(
-      `Сервер запущен: ${process.env.PORT} and worker ${process.pid}`
-    );
+    console.log(`The server is running: ${process.env.PORT} stream ${process.pid}`);
   });
 };
 
