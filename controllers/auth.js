@@ -11,9 +11,35 @@ const ssoTokenSecret = process.env.SSO_TOKEN_SECRET;
 const ssoTokenTime = process.env.SSO_TOKEN_TIME;
 
 class auth {
+  createAsseccToken(user, refresh){
+    return {
+      ...user,
+      isAuth: true,
+      accessToken: jwt.sign(user, accessSecret, {
+        expiresIn: accessTime,
+      }),
+      accessTokenTime: accessTime,
+      SSOToken: this.createSSOToken(user),
+      refreshToken: refresh
+    };
+  }
+
+  createRefreshToken(user) {
+    const refreshToken = jwt.sign(user, refreshSecret, {
+      expiresIn: refreshTime,
+    });
+    return refreshToken;
+  }
+
+  createSSOToken(user){
+    return jwt.sign(user, ssoTokenSecret, {
+        expiresIn: ssoTokenTime,
+      });
+  }
+
   async verify(req, res) {
-    const { accessToken } = req.body;
     try {
+      const { accessToken } = req.body;
       const decoded = await jwt.verify(accessToken, accessSecret);
       if (decoded) {
         return res.status(200).json({
@@ -28,29 +54,26 @@ class auth {
       });
     }
   }
-
-  createAsseccToken(userId){
-    return {
-      isAuth: true,
-      accessToken: jwt.sign({ id: userId }, accessSecret, {
-        expiresIn: accessTime,
-      }),
-      accessTokenTime: accessTime,
-      SSOToken: this.createSSOToken(userId)
-    };
-  }
-
-  createRefreshToken(userId) {
-    const refreshToken = jwt.sign({ id: userId }, refreshSecret, {
-      expiresIn: refreshTime,
-    });
-    return refreshToken;
-  }
-
-  createSSOToken(userId){
-    return jwt.sign({ id: userId }, ssoTokenSecret, {
-        expiresIn: ssoTokenTime,
+  
+  async signinSSO(req,res) {
+    try {
+      const { SSOToken } = req.body;
+      const decoded = await jwt.verify(SSOToken, ssoTokenSecret);
+      if (decoded) {
+        const userInfo = {
+          id: decoded.id,
+          name: decoded.name,
+          lastname: decoded.lastname,
+        }
+        let refresh = this.createRefreshToken(userInfo);
+        res.cookie('refreshToken', refresh,{ httpOnly : true} )
+        return res.status(200).json(this.createAsseccToken(userInfo,refresh));
+      }
+    } catch {
+      return res.status(401).json({
+        message: "The token is not valid",
       });
+    }
   }
 
   async signup(req, res) {
@@ -104,8 +127,14 @@ class auth {
       }
       const isMatch = await bcrypt.compare(password, user.password);
       if (isMatch) {
-        res.cookie('refreshToken', this.createRefreshToken(user._id),{ httpOnly : true} )
-        return res.status(200).json(this.createAsseccToken(user._id));
+        const userInfo = {
+          id: user._id,
+          name: user.name,
+          lastname: user.lastname,
+        }
+        let refresh = this.createRefreshToken(userInfo);
+        res.cookie('refreshToken', refresh, { httpOnly : true} )
+        return res.status(200).json(this.createAsseccToken(userInfo, refresh));
       } else {
         return res.status(400).json({ message: "Wrong password." });
       }
@@ -117,12 +146,18 @@ class auth {
   }
 
   async refresh(req, res) {
-    const { refreshToken } = req.cookies;
+    const { refreshToken } = req.cookies || req.body;
     try {
       const decoded = await jwt.verify(refreshToken, refreshSecret);
       if (decoded) {
-        res.cookie('refreshToken', this.createRefreshToken(decoded.id),{ httpOnly : true} )
-        return res.status(200).json(this.createAsseccToken(decoded.id))
+        const userInfo = {
+          id: decoded.id,
+          name: decoded.name,
+          lastname: decoded.lastname,
+        }
+        let refresh = this.createRefreshToken(userInfo);
+        res.cookie('refreshToken', refresh,{ httpOnly : true} )
+        return res.status(200).json(this.createAsseccToken(userInfo, refresh))
       }
     } catch {
       res.clearCookie('refreshToken');
@@ -134,10 +169,18 @@ class auth {
   }
 
   async logout(req, res) {
-    return res.clearCookie('refreshToken')
+    try {
+      const accessToken = req.headers.accesstoken;
+      await jwt.verify(accessToken, accessSecret);
+      return res.clearCookie('refreshToken')
       .status(200).json({
         isAuth: false,
     });
+    } catch {
+      return res.status(401).json({
+        message: "The token is not valid",
+      });
+    }
   }
 }
 

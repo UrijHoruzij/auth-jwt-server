@@ -29,10 +29,17 @@ const server = () => {
 
   app.use(passport.initialize());
   require("./core/passport-config")(passport);
+  let allowedOrigins = ['http://localhost:3000','http://localhost:3006','http://localhost:7000'];
   app.use(cors({
     credentials: true,
-    origin: ['http://localhost:3000']
-  }));
+    origin: function (origin, callback){
+      if(!origin) return callback(null, true);
+      if(allowedOrigins.indexOf(origin) === -1){
+        return callback(new Error('Cors'), false);
+      }
+      return callback(null, true);
+    }
+  }))
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
   app.use(cookieParser())
@@ -49,16 +56,17 @@ const server = () => {
   app.post("/refresh", (req, res) => {
     auth.refresh(req, res);
   });
+  app.post("/signinSSO", (req, res) => {
+    auth.signinSSO(req, res);
+  });
   app.post(
     "/verify",
-    passport.authenticate("jwt"),
     (req, res) => {
       auth.verify(req, res);
     }
   );
   app.post(
     "/logout",
-    passport.authenticate("jwt"),
     (req, res) => {
       auth.logout(req, res);
     }
