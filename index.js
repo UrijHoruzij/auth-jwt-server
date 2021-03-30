@@ -6,7 +6,7 @@ const os = require("os");
 const cluster = require("cluster");
 const cookieParser = require('cookie-parser')
 const db = require("./core/db");
-require("dotenv").config();
+const {ORIGINS, PORT} = require("./config");
 
 const server = () => {
   const app = express();
@@ -29,12 +29,11 @@ const server = () => {
 
   app.use(passport.initialize());
   require("./core/passport-config")(passport);
-  let allowedOrigins = ['http://localhost:3000','http://localhost:3006','http://localhost:7000'];
   app.use(cors({
     credentials: true,
     origin: function (origin, callback){
       if(!origin) return callback(null, true);
-      if(allowedOrigins.indexOf(origin) === -1){
+      if(ORIGINS.indexOf(origin) === -1){
         return callback(new Error('Cors'), false);
       }
       return callback(null, true);
@@ -71,8 +70,8 @@ const server = () => {
       auth.logout(req, res);
     }
   );
-  app.listen(process.env.PORT, () => {
-    console.log(`The server is running: ${process.env.PORT} stream ${process.pid}`);
+  app.listen(PORT, () => {
+    console.log(`The server is running: ${PORT} stream ${process.pid}`);
   });
 };
 

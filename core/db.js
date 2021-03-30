@@ -1,14 +1,9 @@
 const mongoose = require("mongoose");
-require("dotenv").config();
+const { DB_HOST, MONGOOSE_CONFIG} = require("../config");
 
 const db = {};
 db.connect = async () => {
-  const connect = await mongoose.connect(process.env.DB_HOST, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useCreateIndex: true,
-    useFindAndModify: false,
-  });
+  const connect = await mongoose.connect(DB_HOST, MONGOOSE_CONFIG);
   if (connect) {
     console.log("Успешно подключение к MongoDB");
   } else {

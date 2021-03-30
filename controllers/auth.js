@@ -1,46 +1,47 @@
 const UserModel = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
-
-const accessSecret = process.env.SECRET;
-const accessTime = process.env.ACCESS_TOKEN_TIME;
-const refreshSecret = process.env.SECRET_REFRESH;
-const refreshTime = process.env.REFRESH_TOKEN_TIME;
-const ssoTokenSecret = process.env.SSO_TOKEN_SECRET;
-const ssoTokenTime = process.env.SSO_TOKEN_TIME;
+const {
+  SECRET, 
+  ACCESS_TOKEN_TIME,
+  SECRET_REFRESH,
+  REFRESH_TOKEN_TIME,
+  SSO_TOKEN_SECRET,
+  SSO_TOKEN_TIME,
+  COOKIE_CONFIG
+} = require("../config");
 
 class auth {
   createAsseccToken(user, refresh){
     return {
       ...user,
       isAuth: true,
-      accessToken: jwt.sign(user, accessSecret, {
-        expiresIn: accessTime,
+      accessToken: jwt.sign(user, SECRET, {
+        expiresIn: ACCESS_TOKEN_TIME,
       }),
-      accessTokenTime: accessTime,
+      accessTokenTime: ACCESS_TOKEN_TIME,
       SSOToken: this.createSSOToken(user),
       refreshToken: refresh
     };
   }
 
   createRefreshToken(user) {
-    const refreshToken = jwt.sign(user, refreshSecret, {
-      expiresIn: refreshTime,
+    const refreshToken = jwt.sign(user, SECRET_REFRESH, {
+      expiresIn: REFRESH_TOKEN_TIME,
     });
     return refreshToken;
   }
 
   createSSOToken(user){
-    return jwt.sign(user, ssoTokenSecret, {
-        expiresIn: ssoTokenTime,
+    return jwt.sign(user, SSO_TOKEN_SECRET, {
+        expiresIn: SSO_TOKEN_TIME,
       });
   }
 
   async verify(req, res) {
     try {
       const { accessToken } = req.body;
-      const decoded = await jwt.verify(accessToken, accessSecret);
+      const decoded = await jwt.verify(accessToken, SECRET);
       if (decoded) {
         return res.status(200).json({
           message: "The token is valid",
@@ -58,7 +59,7 @@ class auth {
   async signinSSO(req,res) {
     try {
       const { SSOToken } = req.body;
-      const decoded = await jwt.verify(SSOToken, ssoTokenSecret);
+      const decoded = await jwt.verify(SSOToken, SSO_TOKEN_SECRET);
       if (decoded) {
         const userInfo = {
           id: decoded.id,
@@ -66,7 +67,7 @@ class auth {
           lastname: decoded.lastname,
         }
         let refresh = this.createRefreshToken(userInfo);
-        res.cookie('refreshToken', refresh,{ httpOnly : true} )
+        res.cookie('refreshToken', refresh, COOKIE_CONFIG )
         return res.status(200).json(this.createAsseccToken(userInfo,refresh));
       }
     } catch {
@@ -77,8 +78,8 @@ class auth {
   }
 
   async signup(req, res) {
-    const { email, password, name, lastname } = req.body;
     try {
+      const { email, password, name, lastname } = req.body;
       const user = await UserModel.findOne({ email: email });
       if (user) {
         return res.status(400).json({
@@ -117,8 +118,8 @@ class auth {
   }
 
   async signin(req, res) {
-    const { email, password } = req.body;
     try {
+      const { email, password } = req.body;
       const user = await UserModel.findOne({ email: email });
       if (!user) {
         return res.status(404).json({
@@ -133,7 +134,7 @@ class auth {
           lastname: user.lastname,
         }
         let refresh = this.createRefreshToken(userInfo);
-        res.cookie('refreshToken', refresh, { httpOnly : true} )
+        res.cookie('refreshToken', refresh, COOKIE_CONFIG )
         return res.status(200).json(this.createAsseccToken(userInfo, refresh));
       } else {
         return res.status(400).json({ message: "Wrong password." });
@@ -146,9 +147,9 @@ class auth {
   }
 
   async refresh(req, res) {
-    const { refreshToken } = req.cookies || req.body;
     try {
-      const decoded = await jwt.verify(refreshToken, refreshSecret);
+      const { refreshToken } = req.cookies || req.body;
+      const decoded = await jwt.verify(refreshToken, SECRET_REFRESH);
       if (decoded) {
         const userInfo = {
           id: decoded.id,
@@ -156,7 +157,7 @@ class auth {
           lastname: decoded.lastname,
         }
         let refresh = this.createRefreshToken(userInfo);
-        res.cookie('refreshToken', refresh,{ httpOnly : true} )
+        res.cookie('refreshToken', refresh, COOKIE_CONFIG )
         return res.status(200).json(this.createAsseccToken(userInfo, refresh))
       }
     } catch {
@@ -171,7 +172,7 @@ class auth {
   async logout(req, res) {
     try {
       const accessToken = req.headers.accesstoken;
-      await jwt.verify(accessToken, accessSecret);
+      await jwt.verify(accessToken, SECRET);
       return res.clearCookie('refreshToken')
       .status(200).json({
         isAuth: false,

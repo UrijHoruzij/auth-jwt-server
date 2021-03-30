@@ -1,6 +1,6 @@
 FROM node:12
 
-WORKDIR /express-jwt
+WORKDIR /auth-server
 
 COPY package*.json ./
 
