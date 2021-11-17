@@ -5,4 +5,5 @@
 - Express
 - JWT
 - Mongoose
+- Mysql2
 - Passport

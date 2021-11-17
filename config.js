@@ -1,5 +1,5 @@
 module.exports = {
-	ORIGINS: ['http://localhost:3000', 'http://localhost:3006', 'http://localhost:7000'],
+	ORIGINS: ['http://localhost:5000', 'http://localhost:3000', 'http://localhost:3006', 'http://localhost:7000'],
 	PORT: 5000,
 	DB_TYPE: 'mongodb',
 	DB_MYSQL_CONFIG: {
@@ -17,6 +17,7 @@ module.exports = {
 			useFindAndModify: false,
 		},
 	},
+	SHOW_GRAPHIQL: true,
 	ACCESS_TOKEN_TIME: '900s',
 	REFRESH_TOKEN_TIME: '7d',
 	SSO_TOKEN_TIME: '300s',

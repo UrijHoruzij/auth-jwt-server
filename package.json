@@ -1,6 +1,6 @@
 {
   "name": "auth-jwt-server",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "Server authorization JWT",
   "main": "index.js",
   "scripts": {
@@ -16,31 +16,33 @@
     "node.js",
     "mongoose"
   ],
-  "husky": {    
-    "hooks": {      
-      "pre-commit": "prettier", 
-      "pre-push": "prettier"   
-    }  
+  "husky": {
+    "hooks": {
+      "pre-commit": "prettier",
+      "pre-push": "prettier"
+    }
   },
   "author": "Urij Horuzij",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
-    "cookie-parser": "^1.4.5",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
     "express": "^4.17.1",
+    "express-graphql": "^0.12.0",
+    "graphql": "^16.0.1",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.10.0",
+    "mongoose": "^6.0.13",
     "morgan": "^1.10.0",
-    "mysql2": "^2.3.3-rc.0",
-    "nodemon": "^2.0.4",
-    "passport": "^0.4.1",
+    "mysql2": "^2.3.3",
+    "passport": "^0.5.0",
     "passport-jwt": "^4.0.0",
-    "uuid": "^8.3.1"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "husky": "^7.0.4",
-    "prettier": "^2.2.1"
+    "nodemon": "^2.0.15",
+    "prettier": "^2.4.1"
   }
 }
