@@ -1,29 +1,64 @@
 const express = require('express');
+const { graphqlHTTP } = require('express-graphql');
 const passport = require('passport');
 const os = require('os');
 const cluster = require('cluster');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
 const db = require('./core/db');
-const { PORT } = require('./config');
+const { PORT, SHOW_GRAPHIQL } = require('./config');
 const logger = require('./utils/logger');
 const cors = require('./utils/cors');
+const schema = require('./utils/schema');
 
 const server = () => {
 	const app = express();
-	db.connect();
+	const database = db.connect();
 	app.use(logger());
 	app.use(cors());
 	app.use(compression());
 	app.use(passport.initialize());
-	require('./core/passport-config')(passport);
+	require('./core/passport-config')(passport, database);
 	app.use(express.urlencoded({ extended: false }));
 	app.use(express.json());
 	app.use(cookieParser());
 
 	const authClass = require('./controllers/auth');
-	const auth = new authClass();
+	const auth = new authClass(database);
 
+	const authGraphqlClass = require('./controllers/authGraphql');
+	const authGraphql = new authGraphqlClass(database);
+
+	const root = {
+		verify: ({ input }) => {
+			return authGraphql.verify(input);
+		},
+		signinSSO: ({ input }, { res }) => {
+			return authGraphql.signinSSO(input, res);
+		},
+		signup: ({ input }) => {
+			return authGraphql.signup(input);
+		},
+		signin: ({ input }, { res }) => {
+			return authGraphql.signin(input, res);
+		},
+		refresh: ({ input }, { req, res }) => {
+			return authGraphql.refresh(input, req, res);
+		},
+		logout: ({ input }, { res }) => {
+			return authGraphql.logout(input, res);
+		},
+	};
+
+	app.use(
+		'/graphql',
+		graphqlHTTP((req, res) => ({
+			graphiql: SHOW_GRAPHIQL,
+			schema,
+			rootValue: root,
+			context: { req, res },
+		})),
+	);
 	app.post('/signup', (req, res) => {
 		auth.signup(req, res);
 	});
