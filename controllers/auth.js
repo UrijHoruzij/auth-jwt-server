@@ -1,4 +1,3 @@
-const UserModel = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const {
@@ -12,10 +11,13 @@ const {
 } = require('../config');
 
 class auth {
+	constructor(database) {
+		this.database = database;
+	}
+
 	createAsseccToken(user, refresh) {
 		return {
 			...user,
-			isAuth: true,
 			accessToken: jwt.sign(user, SECRET, {
 				expiresIn: ACCESS_TOKEN_TIME,
 			}),
@@ -44,15 +46,14 @@ class auth {
 			const decoded = await jwt.verify(accessToken, SECRET);
 			if (decoded) {
 				return res.status(200).json({
-					message: 'The token is valid',
-					verify: true,
+					status: 'SUCCESSFUL',
+					message: 'The token is valid.',
 				});
 			}
 		} catch {
 			return res.status(401).json({
 				status: 'FAILURE',
-				message: 'The token is not valid',
-				verify: false,
+				message: 'The token is not valid.',
 			});
 		}
 	}
@@ -63,7 +64,7 @@ class auth {
 			const decoded = await jwt.verify(SSOToken, SSO_TOKEN_SECRET);
 			if (decoded) {
 				const userInfo = {
-					id: decoded.id,
+					_id: decoded._id,
 					name: decoded.name,
 					lastname: decoded.lastname,
 				};
@@ -74,7 +75,7 @@ class auth {
 		} catch {
 			return res.status(401).json({
 				status: 'FAILURE',
-				message: 'The token is not valid',
+				message: 'The token is not valid.',
 			});
 		}
 	}
@@ -82,7 +83,7 @@ class auth {
 	async signup(req, res) {
 		try {
 			const { email, password, name, lastname } = req.body;
-			const user = await UserModel.findOne({ email: email });
+			const user = await this.database.checkExistUser(email);
 			if (user) {
 				return res.status(400).json({
 					status: 'FAILURE',
@@ -96,21 +97,22 @@ class auth {
 							message: err,
 						});
 					}
-					const newUser = new UserModel({
+					const newUser = {
 						email: email,
 						password: hash,
 						name: name,
 						lastname: lastname,
-					});
-					let userSave = await newUser.save();
+					};
+					let userSave = await this.database.addUser(newUser);
 					if (userSave) {
 						return res.status(201).json({
-							message: 'The user is created',
+							status: 'SUCCESSFUL',
+							message: 'The user is created.',
 						});
 					} else {
 						return res.status(500).json({
 							status: 'FAILURE',
-							message: 'Server error',
+							message: 'Server error.',
 						});
 					}
 				});
@@ -118,7 +120,7 @@ class auth {
 		} catch {
 			return res.status(500).json({
 				status: 'FAILURE',
-				message: 'Server error',
+				message: 'Server error.',
 			});
 		}
 	}
@@ -126,7 +128,7 @@ class auth {
 	async signin(req, res) {
 		try {
 			const { email, password } = req.body;
-			const user = await UserModel.findOne({ email: email });
+			const user = await this.database.checkExistUser(email);
 			if (!user) {
 				return res.status(404).json({
 					status: 'FAILURE',
@@ -136,7 +138,7 @@ class auth {
 			const isMatch = await bcrypt.compare(password, user.password);
 			if (isMatch) {
 				const userInfo = {
-					id: user._id,
+					_id: user._id,
 					name: user.name,
 					lastname: user.lastname,
 				};
@@ -144,12 +146,12 @@ class auth {
 				res.cookie('refreshToken', refresh, COOKIE_CONFIG);
 				return res.status(200).json(this.createAsseccToken(userInfo, refresh));
 			} else {
-				return res.status(400).json({ message: 'Wrong password.' });
+				return res.status(400).json({ status: 'FAILURE', message: 'Wrong password.' });
 			}
 		} catch {
 			return res.status(500).json({
 				status: 'FAILURE',
-				message: 'Server error',
+				message: 'Server error.',
 			});
 		}
 	}
@@ -160,7 +162,7 @@ class auth {
 			const decoded = await jwt.verify(refreshToken, SECRET_REFRESH);
 			if (decoded) {
 				const userInfo = {
-					id: decoded.id,
+					_id: decoded._id,
 					name: decoded.name,
 					lastname: decoded.lastname,
 				};
@@ -172,24 +174,23 @@ class auth {
 			res.clearCookie('refreshToken');
 			return res.status(500).json({
 				status: 'FAILURE',
-				isAuth: false,
-				message: 'Server error',
+				message: 'Server error.',
 			});
 		}
 	}
 
 	async logout(req, res) {
 		try {
-			const accessToken = req.headers.accesstoken;
+			const accessToken = req.headers.accesstoken || req.body.accessToken;
 			await jwt.verify(accessToken, SECRET);
 			return res.clearCookie('refreshToken').status(200).json({
 				status: 'SUCCESSFUL',
-				isAuth: false,
+				message: 'User logged out.',
 			});
 		} catch {
 			return res.status(401).json({
 				status: 'FAILURE',
-				message: 'The token is not valid',
+				message: 'The token is not valid.',
 			});
 		}
 	}
