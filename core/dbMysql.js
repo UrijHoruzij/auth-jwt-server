@@ -1,22 +1,25 @@
 class dbMysql {
 	constructor(connection) {
 		this.connection = connection;
-		this.createTable();
+		this.connection.query(this.createTable());
 	}
 	async getUserById(_id) {
-		return ([rows, fields] = await this.connection.execute(`SELECT * FROM Users WHERE _id=${_id}`));
+		[rows, fields] = await this.connection.query(`SELECT * FROM Users WHERE _id=${_id}`);
+		return rows;
 	}
 	async checkExistUser(email) {
-		return ([rows, fields] = await this.connection.execute(`SELECT * FROM Users WHERE email=${email}`));
+		[rows, fields] = await this.connection.query(`SELECT * FROM Users WHERE email=${email}`);
+		return rows;
 	}
 	async addUser(data) {
-		return ([rows, fields] = await this.connection.execute(
+		const result = await this.connection.query(
 			`INSERT INTO Users (email,password,name,lastname) VALUES (${data.email}, ${data.password}, ${data.name},${data.lastname});`,
-		));
+		);
+		return result[0];
 	}
 
 	createTable() {
-		`CREATE TABLE IF NOT EXISTS Users (
+		return `CREATE TABLE IF NOT EXISTS Users (
 			_id INT AUTO_INCREMENT PRIMARY KEY,
 			email VARCHAR(120) NOT NULL UNIQUE,
 			password VARCHAR(120) NOT NULL,
