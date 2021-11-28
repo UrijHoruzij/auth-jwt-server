@@ -1,4 +1,5 @@
 const express = require('express');
+const expressWs = require('express-ws');
 const { graphqlHTTP } = require('express-graphql');
 const passport = require('passport');
 const os = require('os');
@@ -13,6 +14,7 @@ const schema = require('./utils/schema');
 
 const server = () => {
 	const app = express();
+	expressWs(app);
 	const database = db.connect();
 	app.use(logger());
 	app.use(cors());
@@ -77,6 +79,28 @@ const server = () => {
 	app.post('/logout', (req, res) => {
 		auth.logout(req, res);
 	});
+
+	app.ws('/', function (ws, req) {
+		ws.on('signup', function (msg) {
+			console.log(msg);
+		});
+		ws.on('signin', function (msg) {
+			console.log(msg);
+		});
+		ws.on('refresh', function (msg) {
+			console.log(msg);
+		});
+		ws.on('signinSSO', function (msg) {
+			console.log(msg);
+		});
+		ws.on('verify', function (msg) {
+			console.log(msg);
+		});
+		ws.on('logout', function (msg) {
+			console.log(msg);
+		});
+	});
+
 	app.listen(PORT, () => {
 		console.log(`The server is running: ${PORT} stream ${process.pid}`);
 	});
