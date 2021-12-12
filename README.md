@@ -1,8 +1,8 @@
-## Express-JWT
+## Auth-JWT-Server
 
 ### Stack:
 
-- Express
+- Fastify
 - JWT
 - Mongoose
 - Mysql2

@@ -1,4 +1,11 @@
 const mongoose = require('mongoose');
+/**
+ * @module UsersSchema
+ */
+
+/**
+ * UsersSchema
+ */
 const UsersSchema = new mongoose.Schema({
 	email: {
 		type: String,

@@ -1,6 +1,11 @@
-const { buildSchema } = require('graphql');
+/**
+ * @module schema
+ */
 
-const schema = buildSchema(`
+/**
+ * schema
+ */
+const schema = `
     type UserInfo {
         _id: ID
         email: String
@@ -46,7 +51,6 @@ const schema = buildSchema(`
     input Logout{
         accessToken: String!
     }
-    
     type Mutation {
         verify(input: Verify): Info
         signinSSO(input: SignInSSO): ProtectedUserInfo
@@ -56,8 +60,8 @@ const schema = buildSchema(`
         logout(input: Logout): Info
     }
     type Query {
-       me: UserInfo
+       me: String
     } 
-`);
+`;
 
 module.exports = schema;

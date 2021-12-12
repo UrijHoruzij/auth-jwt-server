@@ -1,4 +1,5 @@
 module.exports = {
+	CLUSTERS: true,
 	ORIGINS: ['http://localhost:5000', 'http://localhost:3000', 'http://localhost:3006', 'http://localhost:7000'],
 	PORT: 5000,
 	DB_TYPE: 'mongodb',
@@ -10,12 +11,7 @@ module.exports = {
 	},
 	DB_MONGODB_CONFIG: {
 		host: 'mongodb://localhost/express-jwt',
-		config: {
-			useNewUrlParser: true,
-			useUnifiedTopology: true,
-			useCreateIndex: true,
-			useFindAndModify: false,
-		},
+		config: {},
 	},
 	SHOW_GRAPHIQL: true,
 	ACCESS_TOKEN_TIME: '900s',

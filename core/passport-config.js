@@ -1,15 +1,26 @@
 const { Strategy, ExtractJwt } = require('passport-jwt');
-const { SECRET } = require('../config');
+const { SECRET } = require('../config.js');
+
+/**
+ * @module JWTStrategy
+ */
 
 const opts = {
 	jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 	secretOrKey: SECRET,
 };
 
-module.exports = (passport, database) => {
+/**
+ * JWTStrategy
+ * @param {object} app - fastify
+ * @param {object} passport - passport
+ * @returns {object} passport strategy
+ */
+const JWTStrategy = (app, passport) => {
 	passport.use(
+		'jwt',
 		new Strategy(opts, async (payload, done) => {
-			const user = database.getUserById(payload.id);
+			const user = app.db.client.getUserById(payload._id);
 			if (user) {
 				return done(null, {
 					_id: user._id,
@@ -22,3 +33,5 @@ module.exports = (passport, database) => {
 		}),
 	);
 };
+
+module.exports = JWTStrategy;

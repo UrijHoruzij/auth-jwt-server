@@ -8,13 +8,29 @@ const {
 	SSO_TOKEN_SECRET,
 	SSO_TOKEN_TIME,
 	COOKIE_CONFIG,
-} = require('../config');
+} = require('../config.js');
 
+/**
+ * @module authGraphql
+ */
+
+/**
+ * Class function authGraphql
+ */
 class authGraphql {
+	/**
+	 * Create a authGraphql
+	 * @constructor
+	 */
 	constructor(database) {
 		this.database = database;
 	}
-
+	/**
+	 * createAsseccToken
+	 * @param {object} user - User info
+	 * @param {string} refresh - refresh token
+	 * @returns {object} User info
+	 */
 	createAsseccToken(user, refresh) {
 		return {
 			...user,
@@ -26,20 +42,33 @@ class authGraphql {
 			refreshToken: refresh,
 		};
 	}
-
+	/**
+	 * createRefreshToken
+	 * @param {object} user - User info
+	 * @returns {string} refresh token
+	 */
 	createRefreshToken(user) {
 		const refreshToken = jwt.sign(user, SECRET_REFRESH, {
 			expiresIn: REFRESH_TOKEN_TIME,
 		});
 		return refreshToken;
 	}
-
+	/**
+	 * createSSOToken
+	 * @param {object} user - User info
+	 * @returns {string} SSO token
+	 */
 	createSSOToken(user) {
 		return jwt.sign(user, SSO_TOKEN_SECRET, {
 			expiresIn: SSO_TOKEN_TIME,
 		});
 	}
 
+	/**
+	 * verify
+	 * @param {object} input - accessToken
+	 * @returns {object}
+	 */
 	async verify(input) {
 		try {
 			const { accessToken } = input;
@@ -58,6 +87,12 @@ class authGraphql {
 		}
 	}
 
+	/**
+	 * signinSSO
+	 * @param {object} input - SSOToken
+	 * @param {object} res - response
+	 * @returns {object}
+	 */
 	async signinSSO(input, res) {
 		try {
 			const { SSOToken } = input;
@@ -80,6 +115,11 @@ class authGraphql {
 		}
 	}
 
+	/**
+	 * signup
+	 * @param {object} input - email, password, name, lastname
+	 * @returns {object}
+	 */
 	async signup(input) {
 		try {
 			const { email, password, name, lastname } = input;
@@ -125,6 +165,12 @@ class authGraphql {
 		}
 	}
 
+	/**
+	 * signin
+	 * @param {object} input - email, password
+	 * @param {object} res - response
+	 * @returns {object}
+	 */
 	async signin(input, res) {
 		try {
 			const { email, password } = input;
@@ -156,9 +202,16 @@ class authGraphql {
 		}
 	}
 
+	/**
+	 * refresh
+	 * @param {object} input - refreshToken
+	 * @param {object} req - request
+	 * @param {object} res - response
+	 * @returns {object}
+	 */
 	async refresh(input, req, res) {
 		try {
-			const { refreshToken } = req.cookies || input;
+			const refreshToken = req.cookies.refreshToken || input.refreshToken;
 			const decoded = await jwt.verify(refreshToken, SECRET_REFRESH);
 			if (decoded) {
 				const userInfo = {
@@ -179,6 +232,12 @@ class authGraphql {
 		}
 	}
 
+	/**
+	 * logout
+	 * @param {object} input - accessToken
+	 * @param {object} res - response
+	 * @returns {object}
+	 */
 	async logout(input, res) {
 		try {
 			const { accessToken } = input;
