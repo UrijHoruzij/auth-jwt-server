@@ -29,7 +29,7 @@
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "fastify": "^3.24.1",
+    "fastify": "^3.29.3",
     "fastify-cookie": "^5.4.0",
     "fastify-cors": "^6.0.2",
     "fastify-flash": "^2.0.2",
