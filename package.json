@@ -36,7 +36,7 @@
     "fastify-passport": "^0.4.3",
     "fastify-secure-session": "^3.0.0",
     "jsonwebtoken": "^8.5.1",
-    "mercurius": "^11.2.0",
+    "mercurius": "^11.4.0",
     "mongoose": "^6.7.3",
     "mysql2": "^2.3.3",
     "passport": "^0.6.0",
