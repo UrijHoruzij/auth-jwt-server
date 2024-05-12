@@ -8,14 +8,12 @@
     </a>
   </p>
 
-
 ### Stack:
 
-- Fastify
-- JWT
-- Mongoose
-- Mysql2
-- Passport
+-   Nest.js
+-   Fastify
+-   JWT
+-   TypeORM
 
 ## License
 
